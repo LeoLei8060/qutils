@@ -1,5 +1,4 @@
 #pragma once
-#include "qutils_global.h"
 
 #include <QFont>
 #include <QFontDatabase>
@@ -7,7 +6,7 @@
 #include <QMutex>
 
 namespace qutils {
-class QUTILS_EXPORT FontManager
+class FontManager
 {
 public:
     static FontManager *instance();
