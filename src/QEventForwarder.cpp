@@ -1,6 +1,7 @@
 ﻿#include "QEventForwarder.h"
 #include <QWriteLocker>
 
+namespace qutils {
 QMap<QByteArray, QList<QObject *>> QEventForwarder::m_eventsPool;
 QReadWriteLock                     QEventForwarder::m_eventLock;
 QString                            QEventForwarder::m_lastError;
@@ -81,3 +82,5 @@ bool QEventForwarder::publish(const QByteArray  &eventName,
     m_lastError += "]\n";
     return false;
 }
+
+} // namespace qutils

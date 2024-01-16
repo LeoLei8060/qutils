@@ -8,6 +8,8 @@
 #include <QObject>
 #include <QReadWriteLock>
 
+namespace qutils {
+
 #define METHOD_PREFIX "onEvent_"
 
 class QEventForwarder : public QObject
@@ -89,3 +91,5 @@ private:
 //{
 //    return QGenericArgument(NAMEOF_TYPE_EXPR(val).data(), &val);
 //}
+
+} // namespace qutils
