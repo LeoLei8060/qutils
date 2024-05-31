@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include <cxxabi.h>
 #include <memory>
 #include <QDebug>
 #include <QList>
@@ -10,13 +9,13 @@
 
 namespace qutils {
 
-#define METHOD_PREFIX "onEvent_"
+#define EVENT_METHOD_PREFIX "event_"
 
 class QEventForwarder : public QObject
 {
     Q_OBJECT
 public:
-    static void unSubscribe(QObject *listener, const QByteArray &eventName);
+    static void unsubscribe(QObject *listener, const QByteArray &eventName);
 
     static bool subscribe(QObject *listener, const QByteArray &eventName);
 
@@ -59,37 +58,24 @@ public:
                        val9);
     }
 
-    static inline QString get_Errors() { return m_lastError; }
+    static inline QString getLastError() { return m_lastErrorMessage; }
 
     static inline void clearEvents()
     {
-        QWriteLocker locker(&m_eventLock);
-        m_eventsPool.clear();
+        QWriteLocker locker(&m_subscriptionLock);
+        m_eventSubscriptions.clear();
     }
 
-    static inline QByteArray methodFormatting(const QByteArray &eventName)
+    static inline QByteArray formatMethodName(const QByteArray &eventName)
     {
-        return METHOD_PREFIX + eventName;
+        return EVENT_METHOD_PREFIX + eventName;
     }
 
 private:
-    static QMap<QByteArray, QList<QObject *>> m_eventsPool;
+    static QMap<QByteArray, QList<QObject *>> m_eventSubscriptions;
 
-    static QReadWriteLock m_eventLock;
+    static QReadWriteLock m_subscriptionLock;
 
-    static QString m_lastError;
+    static QString m_lastErrorMessage;
 };
-
-
-/*
-* Suggested to use type inference:
-*   Use the third-party library https://github.com/Neargye/nameof to implement type inference, abandoning the Q_ARG macro.
-* The current version does not provide this method temporarily.
-*/
-//template<typename T>
-//QGenericArgument toArg(T &&val)
-//{
-//    return QGenericArgument(NAMEOF_TYPE_EXPR(val).data(), &val);
-//}
-
 } // namespace qutils

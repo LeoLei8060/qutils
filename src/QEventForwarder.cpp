@@ -2,31 +2,31 @@
 #include <QWriteLocker>
 
 namespace qutils {
-QMap<QByteArray, QList<QObject *>> QEventForwarder::m_eventsPool;
-QReadWriteLock                     QEventForwarder::m_eventLock;
-QString                            QEventForwarder::m_lastError;
+QMap<QByteArray, QList<QObject *>> QEventForwarder::m_eventSubscriptions;
+QReadWriteLock                     QEventForwarder::m_subscriptionLock;
+QString                            QEventForwarder::m_lastErrorMessage;
 
-void QEventForwarder::unSubscribe(QObject *listener, const QByteArray &eventName)
+void QEventForwarder::unsubscribe(QObject *listener, const QByteArray &eventName)
 {
-    QWriteLocker locker(&m_eventLock);
+    QWriteLocker locker(&m_subscriptionLock);
     int          index = -1;
-    if (m_eventsPool.contains(eventName) && (index = m_eventsPool[eventName].indexOf(listener)) >= 0
-        && index < m_eventsPool[eventName].count())
-        m_eventsPool[eventName].takeAt(index);
+    if (m_eventSubscriptions.contains(eventName) && (index = m_eventSubscriptions[eventName].indexOf(listener)) >= 0
+        && index < m_eventSubscriptions[eventName].count())
+        m_eventSubscriptions[eventName].takeAt(index);
 }
 
 bool QEventForwarder::subscribe(QObject *listener, const QByteArray &eventName)
 {
-    QWriteLocker locker(&m_eventLock);
-    if (m_eventsPool.contains(eventName)) {
-        if (-1 != m_eventsPool[eventName].indexOf(listener)) {
-            m_lastError = QString("This object is subscribed to this eventName");
+    QWriteLocker locker(&m_subscriptionLock);
+    if (m_eventSubscriptions.contains(eventName)) {
+        if (-1 != m_eventSubscriptions[eventName].indexOf(listener)) {
+            m_lastErrorMessage = QString("This object is subscribed to this eventName");
             return false;
         }
-        m_eventsPool[eventName].push_back(listener);
+        m_eventSubscriptions[eventName].push_back(listener);
         return true;
     } else {
-        m_eventsPool.insert(eventName, {listener});
+        m_eventSubscriptions.insert(eventName, {listener});
         return true;
     }
 }
@@ -44,14 +44,14 @@ bool QEventForwarder::publish(const QByteArray  &eventName,
                               QGenericArgument   val8,
                               QGenericArgument   val9)
 {
-    QReadLocker locker(&m_eventLock);
-    if (!m_eventsPool.contains(eventName)) {
-        m_lastError = QString("No objects subscribe to this eventName");
+    QReadLocker locker(&m_subscriptionLock);
+    if (!m_eventSubscriptions.contains(eventName)) {
+        m_lastErrorMessage = QString("No objects subscribe to this eventName");
         return false;
     }
-    auto        methodName = methodFormatting(eventName);
+    auto        methodName = formatMethodName(eventName);
     QStringList errors;
-    auto        listeners = m_eventsPool[eventName];
+    auto        listeners = m_eventSubscriptions[eventName];
     locker.unlock();
     for (auto listener : listeners) {
         if (!listener)
@@ -76,10 +76,10 @@ bool QEventForwarder::publish(const QByteArray  &eventName,
     }
     if (errors.isEmpty())
         return true;
-    m_lastError = QString("%1 execution failed:[\n").arg(QString(eventName));
+    m_lastErrorMessage = QString("%1 execution failed:[\n").arg(QString(eventName));
     for (auto &err : errors)
-        m_lastError += QString("%1;\n").arg(err);
-    m_lastError += "]\n";
+        m_lastErrorMessage += QString("%1;\n").arg(err);
+    m_lastErrorMessage += "]\n";
     return false;
 }
 
